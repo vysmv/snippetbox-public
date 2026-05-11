@@ -1,4 +1,4 @@
-module github.com/vysmv/snippetbox-public
+module github.com/vysmv/demo-app
 
 go 1.26.3
 
