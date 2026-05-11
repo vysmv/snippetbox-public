@@ -1,90 +1,97 @@
 package main
 
 import (
-    "bytes"
-    "errors" // New import
-    "fmt"
-    "net/http"
-    "time"
+	"bytes"
+	"errors" // New import
+	"fmt"
+	"net/http"
+	"time"
 
-    "github.com/go-playground/form/v4" // New import
+	"github.com/go-playground/form/v4" // New import
 )
 
 // The serverError helper writes a log entry at Error level (including the request
 // method and URI as attributes), then sends a generic 500 Internal Server Error
 // response to the user.
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
-    var (
-        method = r.Method
-        uri    = r.URL.RequestURI()
-    )
+	var (
+		method = r.Method
+		uri    = r.URL.RequestURI()
+	)
 
-    app.logger.Error(err.Error(), "method", method, "uri", uri)
-    http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	app.logger.Error(err.Error(), "method", method, "uri", uri)
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
 // The clientError helper sends a specific status code and corresponding description
 // to the user. We'll use this later in the book to send responses like 400 "Bad
 // Request" when there's a problem with the request that the user sent.
 func (app *application) clientError(w http.ResponseWriter, status int) {
-    http.Error(w, http.StatusText(status), status)
+	http.Error(w, http.StatusText(status), status)
 }
 
 func (app *application) render(w http.ResponseWriter, r *http.Request, status int, page string, data templateData) {
-    ts, ok := app.templateCache[page]
-    if !ok {
-        err := fmt.Errorf("the template %s does not exist", page)
-        app.serverError(w, r, err)
-        return
-    }
+	ts, ok := app.templateCache[page]
+	if !ok {
+		err := fmt.Errorf("the template %s does not exist", page)
+		app.serverError(w, r, err)
+		return
+	}
 
-    buf := new(bytes.Buffer)
+	buf := new(bytes.Buffer)
 
-    err := ts.ExecuteTemplate(buf, "base", data)
-    if err != nil {
-        app.serverError(w, r, err)
-        return
-    }
-    
-    w.WriteHeader(status)
+	err := ts.ExecuteTemplate(buf, "base", data)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
 
-    buf.WriteTo(w)
+	w.WriteHeader(status)
+
+	buf.WriteTo(w)
 }
 
 func (app *application) newTemplateData(r *http.Request) templateData {
-    return templateData{
-        CurrentYear: time.Now().Year(),
-        // Add the flash message to the template data, if one exists.
-        Flash:       app.sessionManager.PopString(r.Context(), "flash"),
-    }
+	return templateData{
+		CurrentYear: time.Now().Year(),
+		Flash:       app.sessionManager.PopString(r.Context(), "flash"),
+		// Add the authentication status to the template data.
+		IsAuthenticated: app.isAuthenticated(r),
+	}
 }
 
 // Create a new decodePostForm() helper method. The second parameter here, dst,
 // is the target destination into which we want to decode the form data.
 func (app *application) decodePostForm(r *http.Request, dst any) error {
-    // Call ParseForm() on the request, in the same way that we did in our
-    // snippetCreatePost handler.
-    err := r.ParseForm()
-    if err != nil {
-        return err
-    }
+	// Call ParseForm() on the request, in the same way that we did in our
+	// snippetCreatePost handler.
+	err := r.ParseForm()
+	if err != nil {
+		return err
+	}
 
-    // Call Decode() on our decoder instance, passing the target destination as
-    // the first parameter.
-    err = app.formDecoder.Decode(dst, r.PostForm)
-    if err != nil {
-        // If we try to use an invalid target destination, the Decode() method
-        // will return an error with the type form.InvalidDecoderError. We use 
-        // errors.AsType() to check for this and panic. At the end of this  
-        // chapter we'll talk about panicking versus returning errors, and 
-        // discuss why it's an appropriate thing to do in this specific situation.
-        if _, ok := errors.AsType[*form.InvalidDecoderError](err); ok {
-            panic(err)
-        }
-        
-        // For all other errors, return them as normal.
-        return err
-    }
+	// Call Decode() on our decoder instance, passing the target destination as
+	// the first parameter.
+	err = app.formDecoder.Decode(dst, r.PostForm)
+	if err != nil {
+		// If we try to use an invalid target destination, the Decode() method
+		// will return an error with the type form.InvalidDecoderError. We use
+		// errors.AsType() to check for this and panic. At the end of this
+		// chapter we'll talk about panicking versus returning errors, and
+		// discuss why it's an appropriate thing to do in this specific situation.
+		if _, ok := errors.AsType[*form.InvalidDecoderError](err); ok {
+			panic(err)
+		}
 
-    return nil
+		// For all other errors, return them as normal.
+		return err
+	}
+
+	return nil
+}
+
+// Return true if the current request is from an authenticated user, otherwise
+// return false.
+func (app *application) isAuthenticated(r *http.Request) bool {
+	return app.sessionManager.Exists(r.Context(), "authenticatedUserID")
 }

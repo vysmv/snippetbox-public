@@ -10,11 +10,12 @@ import (
 
 // Include a Snippets field in the templateData struct.
 type templateData struct {
-	CurrentYear int
-	Snippet     models.Snippet
-	Snippets    []models.Snippet
-	Form        any
-	Flash       string // Add a Flash field to the templateData struct.
+	CurrentYear     int
+	Snippet         models.Snippet
+	Snippets        []models.Snippet
+	Form            any
+	Flash           string // Add a Flash field to the templateData struct.
+	IsAuthenticated bool   // Add an IsAuthenticated field to the templateData struct.
 }
 
 // Initialize a template.FuncMap value and store it in a global variable. This is
