@@ -2,12 +2,13 @@ package main
 
 import (
 	"bytes"
-	"errors" // New import
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/go-playground/form/v4" // New import
+	"github.com/go-playground/form/v4"
+	"github.com/justinas/nosurf" // New import
 )
 
 // The serverError helper writes a log entry at Error level (including the request
@@ -57,6 +58,7 @@ func (app *application) newTemplateData(r *http.Request) templateData {
 		Flash:       app.sessionManager.PopString(r.Context(), "flash"),
 		// Add the authentication status to the template data.
 		IsAuthenticated: app.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r), // Add the CSRF token.
 	}
 }
 

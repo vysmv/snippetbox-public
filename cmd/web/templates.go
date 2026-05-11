@@ -16,6 +16,7 @@ type templateData struct {
 	Form            any
 	Flash           string // Add a Flash field to the templateData struct.
 	IsAuthenticated bool   // Add an IsAuthenticated field to the templateData struct.
+	CSRFToken       string // Add a CSRFToken field.
 }
 
 // Initialize a template.FuncMap value and store it in a global variable. This is
