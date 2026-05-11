@@ -46,10 +46,10 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
     app.render(w, r, http.StatusOK, "view.tmpl", data)
 }
 
-// Change the signature of the snippetCreate handler so it is defined as a method
-// against *application.
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("Display a form for creating a new snippet..."))
+    data := app.newTemplateData(r)
+
+    app.render(w, r, http.StatusOK, "create.tmpl", data)
 }
 
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
