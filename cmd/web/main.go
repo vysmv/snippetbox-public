@@ -3,30 +3,28 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"time" // New import
 
-	"html/template" // New import
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
 
-	// Import the models package that we just created. You need to prefix this with
-	// whatever module path you set up back in chapter 02.01 (Project Setup and Creating
-	// a Module) so that the import statement looks like this:
-	// "{your-module-path}/internal/models". If you can't remember what module path you
-	// used, you can find it at the top of the go.mod file.
-	"github.com/vysmv/snippetbox-public/internal/models"
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"                      // New import
+	"github.com/vysmv/snippetbox-public/internal/models" // New import
 
-	"github.com/go-playground/form/v4" // New import
-
-	_ "github.com/go-sql-driver/mysql" // New import
+	"github.com/go-playground/form/v4"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // Add a formDecoder field to hold a pointer to a form.Decoder instance.
 type application struct {
-    logger        *slog.Logger
-    snippets      *models.SnippetModel
-    templateCache map[string]*template.Template
-    formDecoder   *form.Decoder
+	logger         *slog.Logger
+	snippets       *models.SnippetModel
+	templateCache  map[string]*template.Template
+	formDecoder    *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -51,20 +49,28 @@ func main() {
 	defer db.Close()
 
 	// Initialize a new template cache...
-    templateCache, err := newTemplateCache()
-    if err != nil {
-        logger.Error(err.Error())
-        os.Exit(1)
-    }
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 
-	// Initialize a decoder instance...
-    formDecoder := form.NewDecoder()
-	
+	formDecoder := form.NewDecoder()
+
+	// Use the scs.New() function to initialize a new session manager. Then we
+	// configure it to use our MySQL database as the session store, and set a
+	// lifetime of 12 hours (so that sessions automatically expire 12 hours
+	// after first being created).
+	sessionManager := scs.New()
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+
 	app := &application{
-		logger:        logger,
-		snippets:      &models.SnippetModel{DB: db},
-		templateCache: templateCache,
-		formDecoder:   formDecoder,
+		logger:         logger,
+		snippets:       &models.SnippetModel{DB: db},
+		templateCache:  templateCache,
+		formDecoder:    formDecoder,
+		sessionManager: sessionManager,
 	}
 
 	logger.Info("starting server", "addr", *addr)
