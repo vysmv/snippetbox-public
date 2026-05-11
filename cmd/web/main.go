@@ -19,13 +19,14 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// Add a formDecoder field to hold a pointer to a form.Decoder instance.
+// Add a new users field to the application struct.
 type application struct {
-	logger         *slog.Logger
-	snippets       *models.SnippetModel
-	templateCache  map[string]*template.Template
-	formDecoder    *form.Decoder
-	sessionManager *scs.SessionManager
+    logger        *slog.Logger
+    snippets       *models.SnippetModel
+    users          *models.UserModel
+    templateCache  map[string]*template.Template
+    formDecoder    *form.Decoder
+    sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -66,13 +67,16 @@ func main() {
 	sessionManager.Store = mysqlstore.New(db)
 	sessionManager.Lifetime = 12 * time.Hour
 
-	app := &application{
-		logger:         logger,
-		snippets:       &models.SnippetModel{DB: db},
-		templateCache:  templateCache,
-		formDecoder:    formDecoder,
-		sessionManager: sessionManager,
-	}
+	// Initialize a models.UserModel instance and add it to the application
+    // dependencies.
+    app := &application{
+        logger:         logger,
+        snippets:       &models.SnippetModel{DB: db},
+        users:          &models.UserModel{DB: db},
+        templateCache:  templateCache,
+        formDecoder:    formDecoder,
+        sessionManager: sessionManager,
+    }
 
 	// Initialize a tls.Config struct to hold the non-default TLS settings we
 	// want the server to use. In this case the only thing that we're changing
