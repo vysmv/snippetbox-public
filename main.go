@@ -28,16 +28,19 @@ func snippetView(w http.ResponseWriter, r *http.Request) {
     w.Write([]byte(msg))
 }
 
-// Add a snippetCreate handler function.
-func snippetCreate(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("Display a form for creating a new snippet..."))
+// Add a snippetCreatePost handler function.
+func snippetCreatePost(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("Save a new snippet..."))
 }
 
 func main() {
     mux := http.NewServeMux()
-    mux.HandleFunc("/{$}", home)
-    mux.HandleFunc("/snippet/view/{id}", snippetView)  // Add the {id} wildcard segment
-    mux.HandleFunc("/snippet/create", snippetCreate)
+    // Prefix the route patterns with the required HTTP method (for now, we will
+    // restrict all three routes to acting on GET requests).
+    mux.HandleFunc("GET /{$}", home)
+    mux.HandleFunc("GET /snippet/view/{id}", snippetView)
+    // Create the new route, which is restricted to POST requests only.
+    mux.HandleFunc("POST /snippet/create", snippetCreatePost)
 
     log.Print("starting server on :4000")
 
