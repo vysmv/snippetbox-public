@@ -79,18 +79,18 @@ func main() {
 	// is the curve preferences value, so that only elliptic curves with
 	// assembly implementations are used.
 	tlsConfig := &tls.Config{
-		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
-	}
+        CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+    }
 
 	srv := &http.Server{
 		Addr:    *addr,
 		Handler: app.routes(),
-		// Create a *log.Logger from our structured logger handler, which writes
-		// log entries at the Error level, and assign it to the ErrorLog field. If
-		// you would prefer to log the server errors at Warn level instead, you
-		// could pass slog.LevelWarn as the final parameter.
 		ErrorLog:  slog.NewLogLogger(logger.Handler(), slog.LevelError),
 		TLSConfig: tlsConfig,
+		// Add Idle, Read and Write timeouts to the server.
+        IdleTimeout:  time.Minute,
+        ReadTimeout:  5 * time.Second,
+        WriteTimeout: 10 * time.Second,
 	}
 
 	logger.Info("starting server", "addr", srv.Addr)
